@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="카카오페이지·리디북스·네이버 시리즈에서 지금 많이 읽고 있는 웹소설을 장르별로 추천하는 페이지" />
+    <link rel="icon" href="data:," />
+    <title>지금 많이 읽고 있는 웹소설 추천</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --surface: #f4f4f5;
+        --text: #17171a;
+        --dim: #6b6b72;
+        --border: #e4e4e7;
+        --accent: #8c2f39;
+        --kakao: #f2c618;
+        --ridi: #2b7de0;
+        --naver: #12b886;
+        --radius: 10px;
+        --badge-fantasy-bg: #e3ecfd; --badge-fantasy-fg: #2050a0;
+        --badge-hyunpan-bg: #fdeeda; --badge-hyunpan-fg: #9a5b00;
+        --badge-traditional-bg: #e6f4ea; --badge-traditional-fg: #1e6b34;
+        --badge-new-bg: #f3e8fd; --badge-new-fg: #6b21a8;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #121214;
+          --surface: #1e1e21;
+          --text: #f4f4f5;
+          --dim: #a1a1aa;
+          --border: #2e2e33;
+          --accent: #e08a92;
+          --ridi: #5ea1ec;
+          --naver: #2bd39a;
+          --badge-fantasy-bg: #1d2c47; --badge-fantasy-fg: #9dbcf5;
+          --badge-hyunpan-bg: #42320f; --badge-hyunpan-fg: #f2c069;
+          --badge-traditional-bg: #173324; --badge-traditional-fg: #8fd6a4;
+          --badge-new-bg: #33204d; --badge-new-fg: #cfa8f5;
+        }
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        line-height: 1.5;
+      }
+      a { color: inherit; }
+      button { font: inherit; cursor: pointer; background: none; border: none; color: inherit; }
+      button, [role="button"] { min-height: 2rem; }
+
+      .wrap { margin: 0 auto; width: 100%; max-width: 72rem; padding: 0 1rem calc(4rem + env(safe-area-inset-bottom)); }
+      @media (min-width: 640px) { .wrap { padding-left: 1.5rem; padding-right: 1.5rem; } }
+
+      .intro { padding: 1.25rem 0 1rem; }
+      .intro h1 { margin: 0; font-size: 1.25rem; font-weight: 900; line-height: 1.3; letter-spacing: -0.01em; }
+      @media (min-width: 640px) { .intro h1 { font-size: 1.5rem; } }
+      .intro .lede { margin: 0.375rem 0 0; max-width: 42rem; font-size: 0.875rem; line-height: 1.65; color: var(--dim); }
+      .intro .meta { margin: 0.375rem 0 0; font-size: 0.75rem; line-height: 1.65; color: var(--dim); }
+
+      /* Sticky controls: 연재/단행본 전환부터 장르·플랫폼 선택까지 함께 고정 */
+      .controls { position: sticky; top: 0; z-index: 20; background: var(--bg); margin: 0 -1rem; padding: 0.75rem 1rem 0.5rem; }
+      @media (min-width: 640px) { .controls { margin: 0 -1.5rem; padding-left: 1.5rem; padding-right: 1.5rem; } }
+
+      .toggle { display: flex; gap: 0.25rem; border-radius: 999px; background: var(--surface); padding: 0.25rem; margin-bottom: 0.75rem; }
+      .toggle button {
+        flex: 1; min-height: 2.5rem; border-radius: 999px; padding: 0.5rem 1rem;
+        font-size: 0.875rem; font-weight: 900; color: var(--dim);
+      }
+      .toggle button[aria-selected="true"] { background: var(--accent); color: #fff; }
+      .toggle .count { margin-left: 0.375rem; font-size: 0.75rem; font-weight: 700; opacity: 0.8; }
+
+      .chips { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+      .chips.genres { padding-bottom: 0.25rem; }
+      .chip-genre {
+        min-height: 2.25rem; border-radius: 999px; padding: 0.375rem 0.875rem;
+        font-size: 0.875rem; font-weight: 700; background: var(--surface); color: var(--dim);
+      }
+      .chip-genre[aria-selected="true"] { background: var(--accent); color: #fff; }
+      .chips.platforms { margin-top: 0.375rem; }
+      .chip-platform {
+        min-height: 2rem; border-radius: 999px; padding: 0.25rem 0.75rem;
+        font-size: 0.75rem; font-weight: 500; border: 1px solid var(--border); color: var(--dim);
+      }
+      .chip-platform[aria-pressed="true"] { border-color: var(--text); color: var(--text); }
+
+      .genre-section { margin-top: 2rem; }
+      .genre-section h2 {
+        display: flex; align-items: baseline; gap: 0.5rem; margin: 0;
+        border-bottom: 1px solid var(--text); padding-bottom: 0.5rem;
+        font-size: 1.5rem; font-weight: 900; letter-spacing: -0.01em;
+      }
+      .genre-section h2 .sub { font-size: 0.75rem; font-weight: 500; color: var(--dim); }
+
+      .grid { margin-top: 1rem; display: grid; grid-template-columns: 1fr; gap: 2rem 2rem; }
+      @media (min-width: 768px) { .grid.multi { grid-template-columns: 1fr 1fr; } }
+      @media (min-width: 1280px) { .grid.multi { grid-template-columns: 1fr 1fr 1fr; } }
+
+      .col { min-width: 0; }
+      .col header { border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+      .col header .row { display: flex; align-items: center; justify-content: space-between; }
+      .col h3 { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 1rem; font-weight: 900; }
+      .col .home-link { padding: 0.25rem; font-size: 0.75rem; font-weight: 500; color: var(--dim); text-decoration: none; }
+      .col .home-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+      .dot {
+        display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+        border-radius: 999px; font-weight: 900; color: #1b1712;
+      }
+      .dot.md { width: 1.5rem; height: 1.5rem; font-size: 0.75rem; }
+      .dot.sm { width: 1.25rem; height: 1.25rem; font-size: 11px; }
+
+      .page-links { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+      .page-link {
+        display: flex; min-height: 2.75rem; align-items: center; justify-content: space-between; gap: 0.5rem;
+        border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface);
+        padding: 0.625rem 0.875rem; font-size: 0.875rem; font-weight: 700; text-decoration: none;
+      }
+      .page-link .arrow { flex-shrink: 0; color: var(--dim); }
+      .page-link-none {
+        border-radius: var(--radius); background: var(--surface);
+        padding: 0.625rem 0.875rem; font-size: 0.875rem; color: var(--dim); margin: 0;
+      }
+
+      .verified { margin-top: 1rem; }
+      .verified .label { margin: 0; font-size: 0.75rem; font-weight: 700; color: var(--dim); }
+      .verified .label .date { font-weight: 500; }
+      .entries { list-style: none; margin: 0; padding: 0; }
+      .entries li { display: flex; gap: 0.75rem; padding: 0.875rem 0; }
+      .entries li + li { border-top: 1px solid var(--border); }
+      .rank { flex-shrink: 0; width: 1.375rem; text-align: center; font-weight: 700; line-height: 1.4; color: var(--dim); font-size: 0.8125rem; padding-top: 0.1875rem; }
+      .rank.first { color: var(--accent); font-weight: 900; }
+      .entry-main { min-width: 0; flex: 1; }
+      .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem; }
+      .title-row a, .title-row .plain-title { font-size: 15px; font-weight: 700; line-height: 1.4; text-decoration: none; }
+      .title-row a:hover { text-decoration: underline; text-underline-offset: 2px; }
+      .badge {
+        display: inline-flex; flex-shrink: 0; align-items: center; border-radius: 999px;
+        padding: 0.125rem 0.5rem; font-size: 11px; font-weight: 900; line-height: 1.4;
+      }
+      .badge.fantasy { background: var(--badge-fantasy-bg); color: var(--badge-fantasy-fg); }
+      .badge.hyunpan { background: var(--badge-hyunpan-bg); color: var(--badge-hyunpan-fg); }
+      .badge.traditional { background: var(--badge-traditional-bg); color: var(--badge-traditional-fg); }
+      .badge.new { background: var(--badge-new-bg); color: var(--badge-new-fg); }
+      .badge.age19 {
+        height: 1.25rem; min-width: 1.25rem; justify-content: center; border-radius: 999px;
+        background: #d92b2b; color: #fff; padding: 0 0.25rem; font-size: 10px;
+      }
+      .badge.newflag { border-radius: 3px; background: var(--accent); color: #fff; padding: 0.125rem 0.375rem; font-size: 10px; letter-spacing: 0.04em; }
+      .badge.bookpub { border-radius: 3px; border: 1px solid var(--accent); color: var(--accent); background: transparent; padding: 0.125rem 0.375rem; font-size: 10px; font-weight: 700; }
+      .author { margin: 0.125rem 0 0; font-size: 0.75rem; color: var(--dim); }
+      .summary { margin: 0.25rem 0 0; font-size: 0.875rem; line-height: 1.65; }
+      .tags { margin-top: 0.375rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; }
+      .kw { border-radius: 999px; background: var(--surface); padding: 0.125rem 0.5rem; font-size: 11px; font-weight: 500; color: var(--dim); }
+      .also { margin-left: 0.25rem; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 11px; color: var(--dim); flex-wrap: wrap; }
+      .also .lbl { font-weight: 500; }
+      .also a {
+        display: inline-flex; align-items: center; gap: 0.25rem; border-radius: 999px;
+        border: 1px solid var(--border); padding: 0.125rem 0.5rem 0.125rem 0.125rem;
+        font-weight: 500; color: var(--text); text-decoration: none; min-height: 1.75rem;
+      }
+      .partial-note, .empty-note { font-size: 0.75rem; line-height: 1.65; color: var(--dim); }
+      .partial-note { margin: 0; padding: 0.5rem 0; }
+      .empty-note { margin: 0; font-size: 0.875rem; }
+
+      footer { margin-top: 3.5rem; border-top: 1px solid var(--border); padding-top: 1rem; font-size: 0.75rem; line-height: 1.65; color: var(--dim); }
+      footer p { margin: 0; }
+      footer .links { margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+      footer .links a { padding: 0.25rem 0; text-decoration: none; }
+      footer .links a:hover { text-decoration: underline; text-underline-offset: 2px; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="intro">
+        <h1>지금 많이 읽고 있는 웹소설 추천</h1>
+        <p class="lede">
+          카카오페이지·리디북스·네이버 시리즈에서 지금 많이 읽고 있는 웹소설을 장르별로 모았어요.
+          아래 작품은 각 플랫폼의 공식 페이지에서 직접 확인한 것만 표시하고, 작품명을 누르면
+          그 작품의 상세 페이지로 이동해요. 숫자 순위는 확인한 순서를 참고로만 작게 표시해요.
+        </p>
+        <p class="meta" id="intro-meta"></p>
+      </div>
+
+      <div class="controls">
+        <div class="toggle" role="tablist" aria-label="보기 선택" id="view-toggle"></div>
+        <nav aria-label="장르 선택">
+          <div class="chips genres" role="tablist" aria-label="장르" id="genre-chips"></div>
+          <div class="chips platforms" role="group" aria-label="플랫폼 필터" id="platform-chips"></div>
+        </nav>
+      </div>
+
+      <div id="board"></div>
+
+      <footer>
+        <p>
+          작품은 각 플랫폼의 공식 페이지에서 직접 확인한 것만 표시해요. 작품명을 누르면 그
+          작품의 상세 페이지로 이동하고, 상세 링크가 확인되지 않은 작품은 눌리지 않게 표시돼요.
+          제목 옆 빨간 19 표시는 플랫폼에서 19세 미만 구독불가가 확인된 작품에만 붙어요.
+          각 목록 아래의 링크에서 플랫폼별 랭킹 페이지를 더 볼 수 있어요.
+        </p>
+        <p class="links" id="footer-links"></p>
+      </footer>
+    </main>
+
+    <script>
+      "use strict";
+
+      var BOARD = {"snapshotDate":"2026-11-20","fetchedAt":1795157580000,"entries":[{"kind":"book","genre":"bl","platform":"kakao","rank":1,"title":"다정한 습관 [19세 완전판]","author":"","summary":"","keywords":[],"workUrl":"https://page.kakao.com/content/71499565/","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"kakao","rank":2,"title":"꾸덕한 숙성 꿀 한 스푼 [19세 완전판]","author":"","summary":"","keywords":[],"workUrl":"https://page.kakao.com/content/71459043/","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"kakao","rank":3,"title":"산과 바다가 만나면 [19세 완전판]","author":"","summary":"","keywords":[],"workUrl":"https://page.kakao.com/content/71470833/","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"kakao","rank":4,"title":"예스터데이 [19세 완전판]","author":"","summary":"","keywords":[],"workUrl":"https://page.kakao.com/content/71433938/","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"kakao","rank":5,"title":"아무것도 아닌 시간 [19세 완전판]","author":"","summary":"","keywords":[],"workUrl":"https://page.kakao.com/content/71433700/","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"naver","rank":1,"title":"winter의 자몽쥬스 1.2부 [BL]","author":"안경크리너","summary":"AOS, MOBA 게임인 WOH의 프로선수였던 윤초롱.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=10050847","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"naver","rank":2,"title":"마도조사 1~3권 [BL]","author":"묵향동후","summary":"사문을 배신하고 인간의 길을 포기한 악마, 이릉노조夷陵老祖 위무선.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=4534719","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"naver","rank":3,"title":"11번째 수학여행[BL]","author":"도해늘","summary":"이상한 수학여행이 반복되고 있다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=9460470","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"naver","rank":4,"title":"질서주의자들 [BL]","author":"테하누","summary":"그럭저럭 바른 생활을 영위하고 있던 한국대병원 법의관 사무소의 연구사 김사경.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=5075410","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"naver","rank":5,"title":"유언 때문에 죽는 건 잠깐 미뤘습니다 2~5권 [BL]","author":"소림","summary":"10년 전 서채윤이라는 이름으로 활약하며 세계를 구했으나 지금은 무명 헌터로 지내는 윤서.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=9212868","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"ridi","rank":1,"title":"살 빼지 마","author":"우물쥐","summary":"토실하고 말랑하게 생겨선 속은 지독한 남자, 박영. 그는 피글렛 페티시가 있는 위험한 여친들에게 휘둘리며 살아간다.","keywords":[],"workUrl":"https://ridibooks.com/books/2107169053","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"ridi","rank":2,"title":"핏탕물","author":"할로윈","summary":"대한제국에서 알아주는 양반가의 막내 도련님인 ‘호은’은 늘 몸이 아프다.","keywords":[],"workUrl":"https://ridibooks.com/books/425629227","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"ridi","rank":3,"title":"에스퍼 취급 설명서","author":"시그널","summary":"잘나가는 변호사 이태경은 하루아침에 F급 가이드로 각성한다.","keywords":[],"workUrl":"https://ridibooks.com/books/1632014392","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"ridi","rank":4,"title":"매에게 영광을","author":"체리만쥬","summary":"사고로 멈춰 버린 한 기차 안. 기차의 식당칸을 기웃거리던 ‘나’는 그곳에서 한 남자를 만난다.","keywords":[],"workUrl":"https://ridibooks.com/books/3302061587","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"bl","platform":"ridi","rank":5,"title":"논 클래시컬","author":"유아히","summary":"오스트리아 빈, 음악을 물어보러 향했던 지휘자 막스 뷔에크만의 집에서 피아니스트 차영로는 무단침입 한 에스코트로 오해당해 쫓겨난다.","keywords":[],"workUrl":"https://ridibooks.com/books/120096704","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"kakao","rank":1,"title":"공작가의 역대급 신동","author":"체나","summary":"이계에 소환되어, 제국의 사냥개로 일평생을 바쳐야 했던 지구의 SSS급 헌터, 한성.","keywords":["환생","마법사"],"workUrl":"https://page.kakao.com/content/71078180/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"kakao","rank":2,"title":"귀환자의 히든 공략 스트리밍","author":"길월","summary":"여신에게 끌려가 죽어라 굴렀던 55번의 회빙환.","keywords":["게임","먼치킨","방송"],"workUrl":"https://page.kakao.com/content/70243406/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"kakao","rank":3,"title":"SSS급 죽어야 사는 헌터","author":"신노아","summary":"나도 S급 스킬이 갖고 싶다! 죽고 싶을 정도로!","keywords":["레이드","탑등반","회귀"],"workUrl":"https://page.kakao.com/content/65118354/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"kakao","rank":4,"title":"다른 세계에서 주워왔습니다","author":"킹메이커","summary":"망한 세상이지만, 쓸 만한 게 꽤 많다.","keywords":["이능력","먼치킨"],"workUrl":"https://page.kakao.com/content/69019813/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"kakao","rank":5,"title":"이 가문의 미친놈은 나야","author":"달필","summary":"무법도시의 광인, 해결사 케테르.","keywords":["정통","깽판","먼치킨"],"workUrl":"https://page.kakao.com/content/70789870/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"naver","rank":1,"title":"템빨","author":"박새날","summary":"공사장에서 벽돌 나르고 삽질하는 불운한 인생의 신영우.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=13151399","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"naver","rank":2,"title":"달빛조각사","author":"남희성","summary":"NPC한테 아부하여 밥을 얻어먹는 처세술의 대가.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=5778772","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"naver","rank":3,"title":"눈물을 마시는 새","author":"이영도","summary":"“눈물을 마시는 새가 가장 아름다운 노래를 부른다고 하더군.”","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=11682327","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":["ridi"]},{"kind":"book","genre":"fantasy","platform":"naver","rank":4,"title":"별을 품은 소드마스터","author":"Q10","summary":"높디높은 밤하늘에 있지 않더라도 아무도 보지 못하는 곳에 떨어져 있더라도 스스로가 빛나기를 원한다면 그렇다면 그것은 별일것이다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=8807496","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"naver","rank":5,"title":"내 조선에 세종은 없다","author":"핏콩","summary":"전생했더니 동생이 세종이다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=12340225","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"ridi","rank":1,"title":"눈물을 마시는 새","author":"이영도","summary":"『퓨처워커』,『폴라리스 랩소디』를 통해 환상 장르에 대한 다양한 실험을 시도하던 작가 이영도의 신작 『눈물을 마시는 새』가 황금가지에서 출간되었다.","keywords":[],"workUrl":"https://ridibooks.com/books/682000457","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":["naver"]},{"kind":"book","genre":"fantasy","platform":"ridi","rank":2,"title":"피를 마시는 새","author":"이영도","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/682000410","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"ridi","rank":3,"title":"블랙배저","author":"썬터다운","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/2378077912","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"ridi","rank":4,"title":"미친 투신이 회귀했다","author":"그루밤","summary":"싸움에 미친 투귀, 한유성 과거의 복수를 위해 매 순간 사선을 넘나들었지만 손에 쥘 수 있었던 것은 절반의 성공과 세상의 멸망을 막지 못했다는 후회 그리고 '별의 군주'가 될 수 있는 기회였다…","keywords":[],"workUrl":"https://ridibooks.com/books/777196559","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"fantasy","platform":"ridi","rank":5,"title":"문과라도 안 죄송한 이세계로 감","author":"정수읠","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/2378066498","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"hyunpan","platform":"kakao","rank":1,"title":"경영은 됐고 돈만 쓰고 싶습니다","author":"김태형","summary":"빛나는 재능을 지닌 작가.","keywords":["경영/기업","환생","재벌"],"workUrl":"https://page.kakao.com/content/70243711/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"hyunpan","platform":"kakao","rank":2,"title":"금수저 생활백서","author":"강동호","summary":"능력은 있으나 금수저 낙하산 때문에 꼬였던 인생.","keywords":["재벌","환생"],"workUrl":"https://page.kakao.com/content/71048971/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"hyunpan","platform":"naver","rank":1,"title":"전지적 독자 시점","author":"싱숑","summary":"오직 나만이, 이 세계의 결말을 알고 있다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=1246296","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"hyunpan","platform":"naver","rank":2,"title":"닥터 최태수","author":"조석호·BM","summary":"“그래. 환자를……. 무서워해야 돼. 두려워하고 손발이……. 떨리는 공포도 느껴야지.”","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=4581418","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"hyunpan","platform":"naver","rank":3,"title":"저승식당","author":"형상준","summary":"- <책을 읽으면 경험이 쌓여!> 형상준 작가의 신작!","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=9519841","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"hyunpan","platform":"naver","rank":4,"title":"재벌녀의 두 번째 남편","author":"악중선","summary":"","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=11110134","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"hyunpan","platform":"ridi","rank":1,"title":"시간 여행자의 투자법","author":"해달벗","summary":"돈 버는 게 너무 쉬운 월스트리트의 시간 여행자.","keywords":["현대판타지","대여","e북"],"workUrl":"https://ridibooks.com/books/425703949","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"hyunpan","platform":"ridi","rank":2,"title":"인벤토리로 암시장의 거물이 되었다.","author":"블랙카드","summary":"어느 날 갑자기 인벤토리 능력이 생겼다.","keywords":["현대판타지","e북","평점4점이상"],"workUrl":"https://ridibooks.com/books/425698273","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"hyunpan","platform":"ridi","rank":3,"title":"너희들은 변호됐다","author":"백산","summary":"우신 그룹의 비리를 쫓는 검사 차주한.","keywords":[],"workUrl":"https://ridibooks.com/books/2155028100","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"hyunpan","platform":"ridi","rank":4,"title":"어두운 바다의 등불이 되어","author":"연산호","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/425345864","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"hyunpan","platform":"ridi","rank":5,"title":"천재 감정사가 그리스에서 복원을 너무 잘함","author":"키보드만세","summary":"퇴사 후 그리스로 온 목수 강도윤.","keywords":["현대판타지","대여","e북"],"workUrl":"https://ridibooks.com/books/4943004784","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"martial","platform":"kakao","rank":1,"title":"무림 속 외노자가 되었다","author":"함초소금","summary":"어느 날 갑자기 무림에 떨어지고 이래저래 3년이 지났다.","keywords":["성장","표국"],"workUrl":"https://page.kakao.com/content/69393583/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"martial","platform":"kakao","rank":2,"title":"남궁세가 대공자는 무공 천재","author":"글덕이","summary":"원귀가 되어서라도 꼭 남궁세가를 망하게 할 거라고 맹세했다.","keywords":["정통","복수","회귀"],"workUrl":"https://page.kakao.com/content/69726794/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"martial","platform":"kakao","rank":3,"title":"협의무신","author":"방심","summary":"천마가 깨어나고 일 년.","keywords":["정통","퓨전","복수"],"workUrl":"https://page.kakao.com/content/69121037/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"martial","platform":"kakao","rank":4,"title":"레벨 업 무림세가","author":"박태석","summary":"눈을 떴을 때, 난 멸문한 가문의 소가주가 되어있었다.","keywords":["퓨전","성장","시스템"],"workUrl":"https://page.kakao.com/content/69566735/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"martial","platform":"kakao","rank":5,"title":"귀환마제","author":"사류라","summary":"지옥에서 돌아온 나에게,","keywords":["복수","먼치킨"],"workUrl":"https://page.kakao.com/content/69486484/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"martial","platform":"naver","rank":1,"title":"군림천하","author":"용대운","summary":"용대운의 장편 무협소설『군림천하』.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=60510","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"martial","platform":"naver","rank":2,"title":"괴력 난신","author":"한중월야","summary":"공자께서는 괴이(怪異), 용력(勇力), 반란(叛亂), 귀신(鬼神)에 대한 것을 말씀하지 않으셨다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=10466277","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"martial","platform":"naver","rank":3,"title":"묵향","author":"전동조","summary":"","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=1273622","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"martial","platform":"naver","rank":4,"title":"화산귀환","author":"비가","summary":"대 화산파 13대 제자.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=13826541","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"martial","platform":"naver","rank":5,"title":"전직지존","author":"장영훈","summary":"무림맹 제일고수이자 무림서열 1위 백소천, 강등되어 무림맹의 한직으로 발령나다!","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=5575226","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"martial","platform":"ridi","rank":1,"title":"반 생","author":"우모","summary":"정마대전으로 몰락한 가문의 백청운. 그에게 남은건 아무것도 없었다.","keywords":["전통무협","대여","e북"],"workUrl":"https://ridibooks.com/books/1176006358","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":"traditional","alsoOn":[]},{"kind":"book","genre":"martial","platform":"ridi","rank":2,"title":"사자","author":"새벽검","summary":"[살아있는 자 그리고 죽지 않는 자들까지 모두가 두려워한 존재, 사자들의 이야기] 죽지 않는 불사의 무인들을 상대하기 위해 불사인이 된 사자단주 광무. 단원들의 희생으로 임무를 성공했으나 천무맹의 배신으로 죽음을 맞이했다.","keywords":["전통무협","대여","e북"],"workUrl":"https://ridibooks.com/books/4181011733","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":"traditional","alsoOn":[]},{"kind":"book","genre":"martial","platform":"ridi","rank":3,"title":"적천기","author":"자우","summary":"세상을 삼키는 붉은 뱀. 천년간 멸망을 막아온 초인과 단 하나의 신궁(神弓).","keywords":["전통무협","10%할인","대여"],"workUrl":"https://ridibooks.com/books/3685043145","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":"traditional","alsoOn":[]},{"kind":"book","genre":"martial","platform":"ridi","rank":4,"title":"도제귀환록","author":"햄닛","summary":"자신의 정의와 복수를 실현하고 자취를 감추었던 무림의 영웅. 도제 남궁적이 긴 은거를 깨고 무림으로 귀환했다.","keywords":[],"workUrl":"https://ridibooks.com/books/1176009246","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":"traditional","alsoOn":[]},{"kind":"book","genre":"martial","platform":"ridi","rank":5,"title":"노비에서 황제까지:천장지구(天長地久)","author":"거북아빠","summary":"\"노비출신 장일이 천하를 통일하고 대 제국의 황제가 되는 이야기\" 신창무적(神槍無敵) 장일. 그의 손에 창이 들리면 천하에 당적할 자가 없다.","keywords":[],"workUrl":"https://ridibooks.com/books/425073008","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":"traditional","alsoOn":[]},{"kind":"book","genre":"martial","platform":"ridi","rank":6,"title":"검마귀향","author":"중산박","summary":"마지막으로 돌아간 고향. 그곳에서 만난 유일한 피붙이.","keywords":["신무협","생존물","빌런캐"],"workUrl":"https://ridibooks.com/books/2057346113","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":"new","alsoOn":[]},{"kind":"book","genre":"martial","platform":"ridi","rank":7,"title":"폐급 무공도 신공으로 만드는 회귀자","author":"철자웅","summary":"\"쓰레기 무공으로 천하제일인이 되는 법. 내가 알려주마!\" 무림으로 전생한 D급 헌터 한무진.","keywords":["신무협","회귀물","대여"],"workUrl":"https://ridibooks.com/books/3586128786","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":"new","alsoOn":[]},{"kind":"book","genre":"martial","platform":"ridi","rank":8,"title":"종남파 노력 천재","author":"사우더","summary":"『종남파 노력 천재』 [재능 없는 이는 고수가 될 수 없는가?] 힘을 얻기 위해 종남파에 들어왔고 힘을 얻고자 하는 이유는 의지를 관철하기 위해서였다 그것은 쏟아지는 불의에 대한 항거이며 무수한 난관에 휩쓸리지 않기 위한 토대이니 끝까지 의지를 관철할 수 있는 이를 고수라 한다면 \"나는 기꺼이 고수가 될 겁니다.\" 자질은 범용할지라도 밑바닥에서 얻은 독기는 비범하기 그지없으니 재능보다 뛰어난 노력으로 천하에 우뚝 설 천화의 행보가 시작된다!","keywords":[],"workUrl":"https://ridibooks.com/books/777196603","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":"new","alsoOn":[]},{"kind":"book","genre":"martial","platform":"ridi","rank":9,"title":"쫄딱 망한 가문의 천하제일인","author":"오일제","summary":"후손들이 말아먹은 가문에 환생했다. 그런데 그게 내 유언 때문이란다.","keywords":[],"workUrl":"https://ridibooks.com/books/425685440","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":"new","alsoOn":[]},{"kind":"book","genre":"martial","platform":"ridi","rank":10,"title":"무림 속 공무원으로 살아가는 법","author":"글쓰는기계","summary":"어느 날 무림에 떨어진 연우혁 무림의 공무원이 되었다","keywords":[],"workUrl":"https://ridibooks.com/books/1561013260","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":"new","alsoOn":[]},{"kind":"book","genre":"romance","platform":"kakao","rank":1,"title":"조폭 남주의 수위 조정을 위하여","author":"잔소","summary":"조폭물이 배경인 연애 시뮬레이션 게임에 빙의했다.","keywords":["현대로맨스","빙의물","막장"],"workUrl":"https://page.kakao.com/content/68211512/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"kakao","rank":2,"title":"두 번째는 능숙하게","author":"오묘희","summary":"“세상에, 너 정말로 몰랐니? 8년씩이나?”","keywords":["현대로맨스","회귀물","다정남"],"workUrl":"https://page.kakao.com/content/67826858/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"kakao","rank":3,"title":"베드신이라서,","author":"온리온","summary":"“우리 한 번 자볼래요?”","keywords":["현대로맨스","연예계물","몸정>맘정"],"workUrl":"https://page.kakao.com/content/65296885/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"kakao","rank":4,"title":"팀장님, 직진하겠습니다","author":"실이아","summary":"화인기업 마케팅팀 최연소 팀장이자 능력, 외모, 성격 모든 것이 완벽한 그녀, 유서린.","keywords":["현대로맨스","사내연애","직진남"],"workUrl":"https://page.kakao.com/content/67555522/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"kakao","rank":5,"title":"내 어린 아내에게","author":"진저리","summary":"“부부가 되고 싶어요. 잠자리도 하는 진짜 부부.”","keywords":["현대로맨스","재회물","짝사랑"],"workUrl":"https://page.kakao.com/content/67660061/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"naver","rank":1,"title":"보스의 노골적 취향","author":"시크크","summary":"외모, 재력, 능력, 치명적인 매력까지 갖춘 재벌남 권도혁.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=10298299","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"naver","rank":2,"title":"봄그늘","author":"김차차","summary":"봄의 그늘에서, 지나간 시절의 너에게.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=9726372","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"naver","rank":3,"title":"난파","author":"서사희","summary":"엮이고 싶을 리가요. 조부의 애인인데다 사촌형과도 붙어먹는 여자인데.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=12177467","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"naver","rank":4,"title":"어른이 되다","author":"김봉평","summary":"지금보다 조금이라도 더 나은 삶을 살고 싶은 게 제 꿈이에요.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=4659149","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"naver","rank":5,"title":"사랑의 새싹약국","author":"이유진","summary":"새싹 소아과에 새싹 약국이라며. 무슨 새싹들이 저렇게 크고 훈훈한 거야.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=8878825","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"ridi","rank":1,"title":"옳고, 그름.","author":"김차차","summary":"옳고, 그름. “그래서, 갑자기 이렇게 귀국하신 이유가.”","keywords":[],"workUrl":"https://ridibooks.com/books/5434001678","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"ridi","rank":2,"title":"우리의 죄를 사하여","author":"고하나","summary":"그 남자, 아니 그 새끼가 쓰레기라는 건 듣자마자 알았다.","keywords":[],"workUrl":"https://ridibooks.com/books/3302046973","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"ridi","rank":3,"title":"체리쉬(Cherish)","author":"가김","summary":"“어서 오세요, 해야지.","keywords":[],"workUrl":"https://ridibooks.com/books/809034987","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"ridi","rank":4,"title":"미확인 콤플렉스","author":"심약섬","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/6414000001","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance","platform":"ridi","rank":5,"title":"사예","author":"무연","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/120119899","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"kakao","rank":1,"title":"흑막의 전담 요리사가 되어버렸다","author":"강연수","summary":"본래의 삶에서 한 번, 로맨스 소설 속 세계에서 두 번 죽었다.","keywords":["로맨스판타지"],"workUrl":"https://page.kakao.com/content/67535458/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"kakao","rank":2,"title":"내가 죽은 뒤 꼬마 신랑은","author":"토토타","summary":"은혜를 갚기 위해 8살이나 어린 꼬마 신랑과 결혼했다.","keywords":["로맨스판타지","성장물","환생물"],"workUrl":"https://page.kakao.com/content/67929278/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"kakao","rank":3,"title":"백작가의 사랑받는 작은 주인님","author":"서갬","summary":"“반갑다, 이슬렛, 내 딸아.”","keywords":["로맨스판타지","빙의물","힐링물"],"workUrl":"https://page.kakao.com/content/67920460/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"kakao","rank":4,"title":"금빛 슈발리에","author":"키아르네","summary":"백작 영애에서 왕비, 그리고 다시 기사로.","keywords":["로맨스판타지","복수물","성장물"],"workUrl":"https://page.kakao.com/content/67338913/","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"kakao","rank":5,"title":"결벽증 흑막놈의 가이드가 되기 싫다 [19세 완전판]","author":"최하비","summary":"","keywords":[],"workUrl":"https://page.kakao.com/content/68015808/","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"naver","rank":1,"title":"울어 봐, 빌어도 좋고","author":"솔체","summary":"헤르하르트가家의 걸작 천국 같은 아르비스의 젊은 주인 아름다운 새의 학살자 마티어스 폰 헤르하르트.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=11598715","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"naver","rank":2,"title":"최애의 며느리가 될 예정이라고요?","author":"마르멜로","summary":"소설 속 최애가 죽고 그녀의 아들이 주인공으로 활약하는 외전에 빙의했다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14491844","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"naver","rank":3,"title":"대가는 너희의 모든 것","author":"고네스","summary":"모두가 날 싫어했다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=11458334","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"naver","rank":4,"title":"문제적 왕자님","author":"솔체","summary":"왕실의 독버섯, 이대로 괜찮은가.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=11735117","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"naver","rank":5,"title":"무기의 여왕 [삽화본]","author":"바가지","summary":"군사 훈련 중, 폭발 사고로 부하를 구하고 죽음을 맞이한 대한민국 특수부대 중사 윤서이.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14738619","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"ridi","rank":1,"title":"개는 주인이 필요하다","author":"이고","summary":"에라블 버밀리언(23세)의 인생은 자주 차악으로 굴러가곤 했다.","keywords":[],"workUrl":"https://ridibooks.com/books/2877017994","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"ridi","rank":2,"title":"상수리나무 아래","author":"김수지","summary":"말더듬이 공작 영애 맥시밀리언은 아버지의 강요로 비천한 출생의 기사와 결혼하게 된다.","keywords":[],"workUrl":"https://ridibooks.com/books/1922000534","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"ridi","rank":3,"title":"이 결혼은 어차피 망하게 되어 있다","author":"김차차","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/5434000012","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"ridi","rank":4,"title":"3cm 대공님","author":"포포친","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/425653574","isNew":false,"bookPublished":true,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"book","genre":"romance-fantasy","platform":"ridi","rank":5,"title":"주인공을 입양했더니 장르가 바뀌었다","author":"데빌지니","summary":"주인공을 학대한 죄로 매번 끔찍하게 살해당하는 악녀에 빙의했다.","keywords":[],"workUrl":"https://ridibooks.com/books/5958044531","isNew":false,"bookPublished":true,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"kakao","rank":1,"title":"우리 사이는 촬영 금지입니다 [19세 완전판]","author":"카폐인중독","summary":"","keywords":[],"workUrl":"https://page.kakao.com/content/71157065/","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"kakao","rank":2,"title":"쌍방 짝사랑 연애담 [19세 완전판]","author":"","summary":"","keywords":[],"workUrl":"https://page.kakao.com/content/71153619/","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"kakao","rank":3,"title":"이 빙의, 어딘가 잘못된 것 같다 [19세 완전판]","author":"","summary":"","keywords":[],"workUrl":"https://page.kakao.com/content/70743281/","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"kakao","rank":4,"title":"외로운 괴담에게는 친구가 필요하다","author":"과실o","summary":"어느 날 갑작스럽게 '괴담' 속에서 눈을 뜬 강준오.","keywords":["현대물","친구>연인","동거물"],"workUrl":"https://page.kakao.com/content/71317639/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"kakao","rank":5,"title":"메리 좀비 아포칼립스! [19세 완전판]","author":"","summary":"","keywords":[],"workUrl":"https://page.kakao.com/content/71156893/","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"naver","rank":1,"title":"비바리움","author":"선림","summary":"—평소 같은 하루였다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14945515","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"naver","rank":2,"title":"러브 미, 마이 마도로스(Love me, my matroos) [단행본]","author":"송구녕","summary":"금빛 모래, 바다 내음 가득한 어촌 송머리.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14683626","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"naver","rank":3,"title":"예스터데이","author":"신초","summary":"4년 된 애인과 권태로운 연애를 이어 가던 이승화.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=15000781","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"naver","rank":4,"title":"그라운드 위의 우리 [단행본]","author":"김서슬","summary":"[ 사람을 말하지 않아도, 이미 지켜본 시간이 증명한다. ]","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=15003585","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"naver","rank":5,"title":"그가 그린 가족 그림 [BL][단행본]","author":"밤이피","summary":"해온은 부모님이 이혼한 뒤 아버지의 불륜상대의 집에 들어가 살았다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=15000036","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"ridi","rank":1,"title":"취수혼","author":"비원","summary":"어느 날 서해강은 남루한 냉궁에서 비참한 최후를 맞는 제 모습을 보게 된다.","keywords":[],"workUrl":"https://ridibooks.com/books/120119267","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"ridi","rank":2,"title":"남편이 안 죽어서 곤란합니다","author":"우리집꿀벌","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/2336053647","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"ridi","rank":3,"title":"터닝(Turning)","author":"쿠유","summary":"평민이자 오메가 출신으로 태어나 능력 하나로 최고의 자리에 오른 유더.","keywords":["판타지","회귀","능력수"],"workUrl":"https://ridibooks.com/books/3049004830","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"ridi","rank":4,"title":"오메가 소후작의 회귀","author":"이나타","summary":"유스릴리안 시노트는 모든 것을 버리고 가문을 떠나 이름 없는 작은 수도원에서 숨어 살다가 27살에 죽었다.","keywords":[],"workUrl":"https://ridibooks.com/books/211058463","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"bl","platform":"ridi","rank":5,"title":"악역의 세계 구원법","author":"설유은","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/120108968","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"kakao","rank":1,"title":"템빨","author":"박새날","summary":"공사장에서 벽돌 나르고 삽질하는 불운한 인생의 신영우.","keywords":["게임","레이드","방송"],"workUrl":"https://page.kakao.com/content/47050646/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"kakao","rank":2,"title":"마법학교 마법사로 살아가는 법","author":"글쓰는기계","summary":"대학원생 이한.","keywords":["차원이동","생존","학원"],"workUrl":"https://page.kakao.com/content/57668776/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"kakao","rank":3,"title":"네크로맨서는 은퇴하고 농부합니다","author":"차공진","summary":"영웅으로 찬사 받던 초상위급 네크로맨서, 강태윤.","keywords":["레이드","귀환","먼치킨"],"workUrl":"https://page.kakao.com/content/70735891/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"kakao","rank":4,"title":"신이 깃든 검술천재","author":"흑아인","summary":"“죽다 살아났더니, 정신이 확 드네.”","keywords":["정통","레이드","복수"],"workUrl":"https://page.kakao.com/content/71027292/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"kakao","rank":5,"title":"70억분의 1의 이레귤러","author":"란델","summary":"과도한 감각 증폭 현상인 ‘선천적 과몰입 증후군’으로 가상현실을 할 수 없는 주승호.","keywords":[],"workUrl":"https://page.kakao.com/content/51237505/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"naver","rank":1,"title":"달빛조각사","author":"남희성","summary":"NPC한테 아부하여 밥을 얻어먹는 처세술의 대가.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=1315886","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"naver","rank":2,"title":"삼국지 호접몽전","author":"청빙 최영진, 둔둔","summary":"네 미녀의 철벽 호위 아래, 삼국시대를 제패하라!","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=1545770","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"naver","rank":3,"title":"강철의 열제 2부 - 서울 정벌기","author":"가우리","summary":"강철의 열제 2부 - 서울 정벌기 내 본신이 깃들어 있는 곳으로 돌아가기 위해 피비린내 나는 길을 걸어왔다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=1353002","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"naver","rank":4,"title":"이계진입 리로디드","author":"임경배, Jiya","summary":"왕의 심장이 불타 사라질 때, 현세의 운명을 초월한 존재가 이 땅에 강림하리라!","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=1727697","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"naver","rank":5,"title":"아르세니아의 마법사","author":"박성호, 나노나","summary":"평범한 고등학생이던 이결.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=1608128","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"ridi","rank":1,"title":"가짜 마법사를 위한 로그아웃은 없다","author":"인간추출기","summary":"거대 기업의 사이비 폭로에 좌천당했다!","keywords":["게임판타지","동료/케미","빙의물"],"workUrl":"https://ridibooks.com/books/6028000267","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"ridi","rank":2,"title":"명문고 EX급 조연의 리플레이","author":"기월월","summary":"국민망겜 최종장을 클리어했더니 게임 속 이름 없는 조연이 되었다.","keywords":["동료/케미","학원/아카데미","빙의물"],"workUrl":"https://ridibooks.com/books/1377070427","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"ridi","rank":3,"title":"내 눈에만 범인이 보임","author":"스플렌더","summary":"추리 만화 속 세상에 떨어져 버리고 말았다.","keywords":[],"workUrl":"https://ridibooks.com/books/425599703","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"fantasy","platform":"ridi","rank":4,"title":"백작가의 망나니가 되었다","author":"유려한","summary":"눈을 떠보니 소설 속이었다. 그것도 망나니로 유명한 백작가 도련님 몸으로. 하지만, 그렇다고 망나니가 될 순 없잖아?","keywords":["퓨전판타지","빙의물"],"workUrl":"https://ridibooks.com/books/875103701","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"kakao","rank":1,"title":"회귀한 재벌 손자는 용서가 어렵다","author":"김광수","summary":"대기업 실직 1등.","keywords":["경영/기업","회귀","재벌"],"workUrl":"https://page.kakao.com/content/69298942/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"kakao","rank":2,"title":"한의사, 무림에서 돌아왔습니다","author":"사향노루","summary":"대한민국의 평범했던 한의대생 한여원.","keywords":["전문직","메디컬","귀환"],"workUrl":"https://page.kakao.com/content/64368707/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"kakao","rank":3,"title":"괴담에 떨어져도 출근을 해야 하는구나","author":"백덕수","summary":"소중한 연차까지 내고 갈 정도로 좋아하던 '어떤 현대판타지' 팝업 이벤트.","keywords":["회사원","고인물","착각"],"workUrl":"https://page.kakao.com/content/65171279/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"kakao","rank":4,"title":"편집자의 생존수칙","author":"김영지","summary":"“당신은 현재 대한민국 정부에서 관리 중인 특수구역에 있습니다.”","keywords":["귀환","생존","학원"],"workUrl":"https://page.kakao.com/content/68473234/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"kakao","rank":5,"title":"회귀자 멱살 잡고 데뷔합니다","author":"제르메","summary":"처음 회귀했을 때, 강진은 드디어 인생을 바꿀 기회를 얻었다고 생각했다.","keywords":["전문직","회귀","노력"],"workUrl":"https://page.kakao.com/content/61822085/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"naver","rank":1,"title":"닥터 최태수","author":"조석호","summary":"2015년 최고의 선택!","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=1870800","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"naver","rank":2,"title":"환생좌","author":"ALLA","summary":"신의 심심함을 만족시키기 위해 시작된 변화.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=2227858","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"naver","rank":3,"title":"마신전설","author":"김강현, Red Brain","summary":"개운하게 눈을 뜬 어느 날, 하루치의 기억이 몽땅 사라진 사실을 안 강진우.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=1401609","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"naver","rank":4,"title":"그레이트 써전","author":"수수림","summary":"1993년 2월 첫째 주 월요일.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=1800112","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"naver","rank":5,"title":"필드","author":"관희천","summary":"어렸을 적 치명적인 부상으로 필드를 떠난,축구신동 백진규.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=1572242","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"ridi","rank":1,"title":"퇴근 후 소소하게 힐링함","author":"후추발바닥","summary":"주식? 코인? 투자? 그런 건 모르겠고, 난 소소하게 힐링이나 하면서 행복하게 살아가련다.","keywords":[],"workUrl":"https://ridibooks.com/books/777192049","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"ridi","rank":2,"title":"이세계 착각 헌터","author":"대대원","summary":"나는 F급 헌터로 환생했다. …쟤들이 그렇게 취급을 안 해줘서 문제지.","keywords":["현대판타지","이세계","빙의물"],"workUrl":"https://ridibooks.com/books/5211000001","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"ridi","rank":3,"title":"은행원도 용꿈을 꾸나요","author":"연산호","summary":"삶에 큰 미련도, 애착도 없는 은수원.","keywords":["생존물","외유내강캐","회사원"],"workUrl":"https://ridibooks.com/books/6188000001","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"ridi","rank":4,"title":"B급 공무원과 말랑한 비상식량","author":"은비한","summary":"전직 기밀 특수부대 '노네임'의 엘리트이자, 대한민국 최초의 게이트를 개척한 검은 영웅, 태태건.","keywords":["동료/케미","회귀물","상태창/시스템"],"workUrl":"https://ridibooks.com/books/3403006104","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"hyunpan","platform":"ridi","rank":5,"title":"답은 정해졌고 넌 데뷔만 해","author":"스레트스","summary":"대한민국 1대 대형 기획사의 만년 1등 연습생.","keywords":["동료/케미","상태창/시스템","성장물"],"workUrl":"https://ridibooks.com/books/3885043768","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"kakao","rank":1,"title":"과속으로 천마신교 데릴사위","author":"춘둥","summary":"비안소(悲顔笑).","keywords":["퓨전","복수","천마"],"workUrl":"https://page.kakao.com/content/69696544/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"kakao","rank":2,"title":"무당기협","author":"은열","summary":"인명은 제천이라 했고, 나에게도 귀천의 때가 왔다.","keywords":["정통","선계","환생"],"workUrl":"https://page.kakao.com/content/52882308/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"kakao","rank":3,"title":"천하제일 무공교관","author":"신가","summary":"마교교주 석원초, 혈교주를 뛰어넘는 괴물이었다.","keywords":["퓨전","학원","먼치킨"],"workUrl":"https://page.kakao.com/content/60346254/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"kakao","rank":4,"title":"불사마제","author":"바루바","summary":"'이름 한번 살벌하네!'","keywords":["퓨전","환생","복수"],"workUrl":"https://page.kakao.com/content/70743735/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"kakao","rank":5,"title":"천마등선","author":"은열","summary":"현대 갑자기 동신은 왜......?","keywords":["환생","먼치킨","천마"],"workUrl":"https://page.kakao.com/content/67860502/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"naver","rank":1,"title":"천하제일 주모","author":"꿈꾸는개발자","summary":"강호에는 수많은 천하제일이 존재한다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14992717","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"naver","rank":2,"title":"선협에서 땅굴을 숨김","author":"불로수선전","summary":"약육강식의 위험천만인 선협 세계에 늙지 않는 불로(不老)의 몸으로 떨어진 이현.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14943043","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"naver","rank":3,"title":"강탈수선전","author":"덕민","summary":"할포검교의 파혼장을 받은 한휘는 염지가 없어졌다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14381588","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"naver","rank":4,"title":"선협에서 뽑기로 수선함","author":"서공(書工)","summary":"[2026 지상최대 웹소설 공모전 수상작]기회는 일 년에 단 한 번뽑기로 수선한다!","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14720071","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"naver","rank":5,"title":"전생검신","author":"구로수번","summary":"나는 고수지망생이었다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=2441258","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":["ridi"]},{"kind":"serial","genre":"martial","platform":"ridi","rank":1,"title":"내 무협 주인공이 나를 싫어한다","author":"커피신단","summary":"내가 쓴 무협 소설에 빙의했다.","keywords":["신무협","동료/케미","빙의물"],"workUrl":"https://ridibooks.com/books/6056000001","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"ridi","rank":2,"title":"전생검신","author":"구로수번","summary":"나는 고수지망생이었다.","keywords":["신무협","회귀물","성장물"],"workUrl":"https://ridibooks.com/books/1007048980","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":["naver"]},{"kind":"serial","genre":"martial","platform":"ridi","rank":3,"title":"절대독마","author":"이재규","summary":"평생을 사천당가의 개로 살아왔다.","keywords":["리다무","웹소설","연재완결"],"workUrl":"https://ridibooks.com/books/4954019384","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"ridi","rank":4,"title":"풀만 먹었는데 천하제일인","author":"하늘가재","summary":"전생에 산속에서 나물을 즐기며 살던 평범한 청년.","keywords":["리다무","웹소설","연재중"],"workUrl":"https://ridibooks.com/books/425701468","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"martial","platform":"ridi","rank":5,"title":"역천수선","author":"명도(明道)","summary":"평범한 대학생 지한(智寒).","keywords":["리다무","웹소설","연재중"],"workUrl":"https://ridibooks.com/books/425700689","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"kakao","rank":1,"title":"무명 여배우인데 모두 날 알아","author":"크트밀","summary":"“그때 게이에서 나 밀었던 거... 도겨울 너야?”","keywords":["현대로맨스","캠퍼스물","연예계물"],"workUrl":"https://page.kakao.com/content/65721646/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"kakao","rank":2,"title":"우리 가족은 계모가 고친다","author":"유한소신","summary":"한량 남편을 조련해 안살림을 맡기고, 계모는 오늘도 바깥일을 나선다.","keywords":["해외로맨스","동양풍","가상시대물"],"workUrl":"https://page.kakao.com/content/71194927/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"kakao","rank":3,"title":"몰락서녀생존기","author":"람글","summary":"“원망하지 말거라, 소아야”","keywords":["동양풍","궁정로맨스","타임슬립"],"workUrl":"https://page.kakao.com/content/70354512/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"kakao","rank":4,"title":"전학생이 무당임을 숨김","author":"현솔","summary":"귀신 쫓는 건 자신 있다.","keywords":["미스터리"],"workUrl":"https://page.kakao.com/content/70712651/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"kakao","rank":5,"title":"아내는 사춘기","author":"레니타스","summary":"깜빡이는 눈꺼풀 사이로, 꿈속의 그 존잘남이 자신을 콕 안았다.","keywords":["현대로맨스","첫사랑","달달물"],"workUrl":"https://page.kakao.com/content/71054877/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"naver","rank":1,"title":"3년 전 나를 버린 남자가 사랑한다고 말한다","author":"류조은","summary":"“쓰레기.”","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14957555","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"naver","rank":2,"title":"수상하고 찬란한 탐정님","author":"소리유","summary":"세 살 난 동생의 실종, 뒤이은 어머니의 죽음.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14691313","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"naver","rank":3,"title":"21세기 대군부인 in 왕립학교","author":"유지원","summary":"왕실이 여전히 존재하는 21세기 대한민국의 왕립학교.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=15012770","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"naver","rank":4,"title":"재벌 3세가 파혼하려고 데려온 여자","author":"이담결","summary":"정략결혼을 깨고 싶은 재벌 3세 강재헌은 집안이 절대 받아들이지 않을 여자를 찾았다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14876040","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"naver","rank":5,"title":"상실증","author":"캐슬그린","summary":"“…근데 우리 진짜 어떻게 만나게 된 거예요?”","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14961726","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"ridi","rank":1,"title":"우리의 죄를 사하여","author":"고하나","summary":"그 남자, 아니 그 새끼가 쓰레기라는 건 듣자마자 알았다.","keywords":[],"workUrl":"https://ridibooks.com/books/3302043658","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"ridi","rank":2,"title":"첫 실패","author":"박영","summary":"나의 엄마는 나를 혹이라고 불렀다.","keywords":[],"workUrl":"https://ridibooks.com/books/6303000001","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"ridi","rank":3,"title":"아가씨가 그 개가 갖고 싶다","author":"춈춈","summary":"개가 있었으면 좋겠다.","keywords":[],"workUrl":"https://ridibooks.com/books/5453000923","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"ridi","rank":4,"title":"색순응","author":"안단테","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/5040000678","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance","platform":"ridi","rank":5,"title":"무에르떼(MUERTE)","author":"쥬시린시","summary":"어느 날 갑자기 홀연히 사라져 버린 여자를 곱씹으며 보낸 시간이, 자그마치 반년이었다.","keywords":[],"workUrl":"https://ridibooks.com/books/425698861","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"kakao","rank":1,"title":"백작가 약방 아가씨","author":"솔땀","summary":"은월문 문주 설화, 로판 세계에 환생하다?","keywords":["로맨스판타지","친구>연인","힐링물"],"workUrl":"https://page.kakao.com/content/71153728/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"kakao","rank":2,"title":"나는 이 빙의를 끝내려 한다","author":"신솔라","summary":"'다나에 윈저'의 몸에 빙의한 앤디나.","keywords":["로맨스판타지","궁정로맨스","가족후회물"],"workUrl":"https://page.kakao.com/content/62655415/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"kakao","rank":3,"title":"잊혀진 들판","author":"김수지","summary":"불문으로 태어난 비운의 황녀, 탈리아 로열 커르타.","keywords":["로맨스판타지","가상시대물","카리스마남"],"workUrl":"https://page.kakao.com/content/66476840/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"kakao","rank":4,"title":"고립된 후작 영애는 먹고살고 싶어서","author":"유나진","summary":"아버지의 장례식 날 나타난 이복오빠.","keywords":["로맨스판타지","가족물","다정남"],"workUrl":"https://page.kakao.com/content/68301756/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"kakao","rank":5,"title":"맹수 가문의 실세는 아기 새입니다!","author":"아이데라","summary":"수인들을 한입에 삼아먹으며 승승장구하던, 명실상부 최강자 헌터본 가(家)에 동그란 무언가가 하나가 굴러들어 왔다.","keywords":["로맨스판타지","육아물","수인물"],"workUrl":"https://page.kakao.com/content/71334120/","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"naver","rank":1,"title":"악덕 지주의 외동따님","author":"스캠퍼","summary":"서남 춘정 지역 대지주의 고명딸, 설.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14601054","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"naver","rank":2,"title":"다정한 왕자를 버리고 철혈의 폭군을 선택했다","author":"그리아-","summary":"변방의 백작가 영애 리아나 에스텔.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14604088","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"naver","rank":3,"title":"대공이 탐낸 오메가 비서님","author":"훌리아","summary":"","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14900757","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"naver","rank":4,"title":"미움받는 악역 성녀의 은밀한 침실","author":"성혜림","summary":"정신 나간 게임으로 유명한 19금 게임에 빙의됐다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14057247","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"naver","rank":5,"title":"백작가의 문제적 계약 아내","author":"박이사","summary":"로판 속 최대의 악녀 올리비아 바이엔……의 여동생 이본느에 빙의했다.","keywords":[],"workUrl":"https://series.naver.com/novel/detail.series?productNo=14159088","isNew":false,"bookPublished":null,"ageRestricted":false,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"ridi","rank":1,"title":"상수리나무 아래","author":"김수지","summary":"말더듬이 공작 영애 맥시밀리언은 아버지의 강요로 비천한 출생의 기사와 결혼하고, 원정을 떠난 남편은 3년 뒤 전 대륙에 명성을 떨치는 기사가 되어 돌아온다.","keywords":[],"workUrl":"https://ridibooks.com/books/1922000007","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"ridi","rank":2,"title":"내게 금지된 것","author":"홍세라","summary":"전쟁 영웅 왕세자의 새 비서관 레인 애슈포드. 차분하고 머리 좋고 믿음직하지만, 고운 얼굴과 달리 성질머리도 제법 있고 뭔가 감추는 구석이 있다.","keywords":[],"workUrl":"https://ridibooks.com/books/5329000859","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"ridi","rank":3,"title":"마굴","author":"미나토","summary":"봉인된 성소에서 500년 전 성녀라 주장하는 여자가 튀어나오고, 중앙 성기사단 부단장 아셀린은 그녀를 미친 도굴꾼이라 생각한다.","keywords":[],"workUrl":"https://ridibooks.com/books/5098000986","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"ridi","rank":4,"title":"페일던트를 위하여","author":"도재연","summary":"브랜다는 어니스트의 혼인 제안을 받아들이며 '아이를 낳지 않는 조건으로, 저도 정부를 두어도 되나요?'라는 조건을 덧붙인다.","keywords":[],"workUrl":"https://ridibooks.com/books/6401000001","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]},{"kind":"serial","genre":"romance-fantasy","platform":"ridi","rank":5,"title":"속죄, 그 잔혹함에 대하여","author":"한보연","summary":"","keywords":[],"workUrl":"https://ridibooks.com/books/5502000001","isNew":false,"bookPublished":null,"ageRestricted":true,"subGenre":null,"alsoOn":[]}]};
+
+      var GENRES = [
+        { key: "fantasy", label: "판타지" },
+        { key: "hyunpan", label: "현판" },
+        { key: "romance-fantasy", label: "로판" },
+        { key: "romance", label: "로맨스" },
+        { key: "martial", label: "무협" },
+        { key: "bl", label: "BL" }
+      ];
+
+      var PLATFORMS = [
+        { key: "kakao", label: "카카오페이지", short: "카", home: "https://page.kakao.com/menu/10011/", color: "var(--kakao)" },
+        { key: "ridi", label: "리디북스", short: "리", home: "https://ridibooks.com/webnovel/recommendation", color: "var(--ridi)" },
+        { key: "naver", label: "네이버 시리즈", short: "네", home: "https://series.naver.com/novel/home.series", color: "var(--naver)" }
+      ];
+
+      var GENRE_PAGES = {
+        kakao: {
+          romance: [{ label: "로맨스 랭킹", url: "https://page.kakao.com/menu/10011/screen/68/" }],
+          "romance-fantasy": [{ label: "로판 랭킹", url: "https://page.kakao.com/menu/10011/screen/92/" }],
+          martial: [{ label: "무협 랭킹", url: "https://page.kakao.com/menu/10011/screen/70/" }],
+          bl: [{ label: "BL 랭킹", url: "https://page.kakao.com/menu/10011/screen/181/" }],
+          fantasy: [{ label: "판타지 랭킹", url: "https://page.kakao.com/menu/10011/screen/91/" }],
+          hyunpan: [{ label: "현판 랭킹", url: "https://page.kakao.com/menu/10011/screen/64/" }]
+        },
+        ridi: {
+          romance: [{ label: "로맨스 랭킹", url: "https://ridibooks.com/romance/webnovel" }],
+          "romance-fantasy": [{ label: "로판 랭킹", url: "https://ridibooks.com/romance-fantasy/webnovel" }],
+          fantasy: [{ label: "판타지 랭킹", url: "https://ridibooks.com/fantasy/webnovel" }],
+          hyunpan: [{ label: "판타지 랭킹", url: "https://ridibooks.com/fantasy/webnovel" }],
+          bl: [{ label: "BL 랭킹", url: "https://ridibooks.com/bl/webnovel" }],
+          martial: [{ label: "무협 랭킹", url: "https://ridibooks.com/category/1754" }]
+        },
+        naver: {
+          romance: [{ label: "로맨스 랭킹", url: "https://series.naver.com/novel/categoryProductList.series?categoryTypeCode=genre&genreCode=201" }],
+          "romance-fantasy": [{ label: "로판 랭킹", url: "https://series.naver.com/novel/categoryProductList.series?categoryTypeCode=genre&genreCode=207" }],
+          fantasy: [{ label: "판타지 랭킹", url: "https://series.naver.com/novel/categoryProductList.series?categoryTypeCode=genre&genreCode=202" }],
+          hyunpan: [{ label: "현판 랭킹", url: "https://series.naver.com/novel/categoryProductList.series?categoryTypeCode=genre&genreCode=208" }],
+          martial: [{ label: "무협 랭킹", url: "https://series.naver.com/novel/categoryProductList.series?categoryTypeCode=genre&genreCode=206" }],
+          bl: [{ label: "BL 랭킹", url: "https://series.naver.com/novel/categoryProductList.series?categoryTypeCode=genre&genreCode=209" }]
+        }
+      };
+
+      var BOOK_PAGES = {
+        kakao: {
+          all: [{ label: "단행본 전체", url: "https://page.kakao.com/menu/10011/screen/73/" }],
+          fantasy: [{ label: "판타지·무협 단행본", url: "https://page.kakao.com/landing/series/list/page/landing/14531/" }],
+          hyunpan: [{ label: "판타지·무협 단행본", url: "https://page.kakao.com/landing/series/list/page/landing/14531/" }],
+          martial: [{ label: "판타지·무협 단행본", url: "https://page.kakao.com/landing/series/list/page/landing/14531/" }],
+          romance: [{ label: "로맨스·로판 단행본", url: "https://page.kakao.com/landing/series/list/page/landing/12692/" }],
+          "romance-fantasy": [{ label: "로맨스·로판 단행본", url: "https://page.kakao.com/landing/series/list/page/landing/12692/" }],
+          bl: [{ label: "BL 단행본", url: "https://page.kakao.com/landing/series/card/page/landing/18204/" }]
+        },
+        naver: {
+          all: [{ label: "단행본 전체", url: "https://series.naver.com/novel/specialFreeList.series?specialFreeTypeCode=SEPARATED_VOLUME_CONTENTS" }]
+        },
+        ridi: {
+          romance: [{ label: "로맨스 단행본", url: "https://ridibooks.com/romance/ebook" }],
+          "romance-fantasy": [{ label: "로판 단행본", url: "https://ridibooks.com/romance-fantasy/ebook" }],
+          fantasy: [{ label: "판타지 단행본", url: "https://ridibooks.com/fantasy/ebook" }],
+          hyunpan: [{ label: "판타지 단행본", url: "https://ridibooks.com/fantasy/ebook" }],
+          bl: [{ label: "BL 단행본", url: "https://ridibooks.com/bl/ebook" }],
+          martial: [
+            { label: "전통무협 단행본", url: "https://ridibooks.com/category/1722" },
+            { label: "신무협 단행본", url: "https://ridibooks.com/category/1721" }
+          ]
+        }
+      };
+
+      var REALTIME_PAGE = "https://page.kakao.com/menu/10011/screen/94/";
+
+      var SUBGENRE_BADGES = {
+        fantasy: { label: "판타지", cls: "fantasy" },
+        hyunpan: { label: "현판", cls: "hyunpan" },
+        traditional: { label: "전통무협", cls: "traditional" },
+        new: { label: "신무협", cls: "new" }
+      };
+
+      var state = { view: "serial", genre: "all", platform: "all" };
+
+      function esc(s) {
+        return String(s == null ? "" : s)
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+      }
+
+      function platformOf(key) {
+        for (var i = 0; i < PLATFORMS.length; i++) if (PLATFORMS[i].key === key) return PLATFORMS[i];
+        return null;
+      }
+
+      function formatDateLabel(iso) {
+        var d = new Date(iso + "T00:00:00+09:00");
+        return new Intl.DateTimeFormat("ko-KR", {
+          timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric", weekday: "long"
+        }).format(d);
+      }
+
+      function formatTimeLabel(ms) {
+        return new Intl.DateTimeFormat("ko-KR", {
+          timeZone: "Asia/Seoul", hour: "numeric", minute: "2-digit"
+        }).format(new Date(ms));
+      }
+
+      function dot(pk, size) {
+        var p = platformOf(pk);
+        if (!p) return "";
+        return '<span class="dot ' + size + '" aria-hidden="true" style="background-color:' + p.color + '">' + p.short + "</span>";
+      }
+
+      function entryRow(e, displayRank, subGenreLabel) {
+        var rank = displayRank != null ? displayRank : e.rank;
+        var badge = e.subGenre ? SUBGENRE_BADGES[e.subGenre] : null;
+        var html = '<li><div class="rank' + (rank === 1 ? " first" : "") + '" aria-label="' +
+          esc(subGenreLabel ? subGenreLabel + " " + rank + "위" : rank + "위") + '">' + rank + '</div><div class="entry-main">';
+        html += '<div class="title-row">';
+        if (e.workUrl) {
+          html += '<a href="' + esc(e.workUrl) + '" target="_blank" rel="noreferrer">' + esc(e.title) + "</a>";
+        } else {
+          html += '<span class="plain-title">' + esc(e.title) + "</span>";
+        }
+        if (badge) {
+          html += '<span class="badge ' + badge.cls + '" aria-label="세부 장르: ' + esc(badge.label) + '">' + esc(badge.label) + "</span>";
+        }
+        if (e.ageRestricted) {
+          html += '<span class="badge age19" role="img" aria-label="19세 미만 구독 불가" title="19세 미만 구독 불가">19</span>';
+        }
+        if (e.isNew) html += '<span class="badge newflag">NEW</span>';
+        if (e.kind === "serial" && e.bookPublished === true) html += '<span class="badge bookpub">단행본 출간</span>';
+        html += "</div>";
+        if (e.author) html += '<p class="author">' + esc(e.author) + " 작가</p>";
+        if (e.summary) html += '<p class="summary">' + esc(e.summary) + "</p>";
+        if ((e.keywords && e.keywords.length) || (e.alsoOn && e.alsoOn.length)) {
+          html += '<div class="tags">';
+          (e.keywords || []).forEach(function (k) {
+            html += '<span class="kw">#' + esc(k) + "</span>";
+          });
+          if (e.alsoOn && e.alsoOn.length) {
+            html += '<span class="also"><span class="lbl">' + (e.kind === "book" ? "함께 출간:" : "함께 연재:") + "</span>";
+            e.alsoOn.forEach(function (pk) {
+              var p = platformOf(pk);
+              if (!p) return;
+              html += '<a href="' + esc(p.home) + '" target="_blank" rel="noreferrer" aria-label="' +
+                esc(p.label + (e.kind === "book" ? "에서도 단행본 출간 — " : "에서도 연재 중 — ") + p.label + " 열기") + '">' +
+                dot(pk, "sm") + esc(p.label) + "</a>";
+            });
+            html += "</span>";
+          }
+          html += "</div>";
+        }
+        html += "</div></li>";
+        return html;
+      }
+
+      function platformColumn(platformKey, genreKey, kind, entries) {
+        var p = platformOf(platformKey);
+        if (!p) return "";
+        var genreLabel = genreKey;
+        GENRES.forEach(function (g) { if (g.key === genreKey) genreLabel = g.label; });
+        var genrePages = (GENRE_PAGES[platformKey] || {})[genreKey] || [];
+        var bookLinks = (BOOK_PAGES[platformKey] || {})[genreKey] || (BOOK_PAGES[platformKey] || {}).all || [];
+        var pageLinks = kind === "book" ? bookLinks : genrePages;
+        var sectionLabel = kind === "book" ? p.label + " " + genreLabel + " 단행본" : p.label + " " + genreLabel + " 추천";
+
+        var html = '<section class="col" aria-label="' + esc(sectionLabel) + '">';
+        html += '<header style="border-color:' + p.color + '"><div class="row"><h3>' + dot(platformKey, "md") + esc(p.label) +
+          '</h3><a class="home-link" href="' + esc(p.home) + '" target="_blank" rel="noreferrer" aria-label="' + esc(p.label + " 웹소설 홈 열기") + '">홈 →</a></div></header>';
+
+        // 랭킹 페이지 링크는 목록 아래에 둔다
+        var linksHtml = '<div class="page-links">';
+        if (pageLinks.length) {
+          pageLinks.forEach(function (lp) {
+            linksHtml += '<a class="page-link" href="' + esc(lp.url) + '" target="_blank" rel="noreferrer" aria-label="' +
+              esc(p.label + " " + lp.label + " 페이지 열기") + '"><span>' + esc(lp.label) + '</span><span class="arrow" aria-hidden="true">↗</span></a>';
+          });
+        } else {
+          linksHtml += '<p class="page-link-none">이 장르의 ' + (kind === "book" ? "단행본" : "랭킹") + " 페이지는 아직 연결되지 않았어요</p>";
+        }
+        if (platformKey === "kakao" && kind === "serial" && genreKey === "fantasy") {
+          linksHtml += '<a class="page-link" href="' + REALTIME_PAGE + '" target="_blank" rel="noreferrer" aria-label="카카오페이지 실시간 랭킹 페이지 열기"><span>실시간 랭킹</span><span class="arrow" aria-hidden="true">↗</span></a>';
+        }
+        linksHtml += "</div>";
+
+        if (entries.length) {
+          // 세부 장르 표시가 있는 칸은 세부 장르 안에서 순위를 다시 매긴다
+          var counters = {};
+          var rows = entries.map(function (e) {
+            if (!e.subGenre) return { e: e, rank: e.rank, lbl: null };
+            var next = (counters[e.subGenre] || 0) + 1;
+            counters[e.subGenre] = next;
+            var b = SUBGENRE_BADGES[e.subGenre];
+            return { e: e, rank: next, lbl: b ? b.label : null };
+          });
+          var cellLimit = (platformKey === "ridi" && genreKey === "martial" && kind === "book") ? 10 : 5;
+          html += '<div class="verified"><p class="label">직접 확인한 추천작';
+          if (BOARD.snapshotDate) html += ' <span class="date">· ' + esc(formatDateLabel(BOARD.snapshotDate)) + " 기준</span>";
+          html += '</p><ul class="entries">';
+          rows.forEach(function (r) { html += entryRow(r.e, r.rank, r.lbl); });
+          html += "</ul>";
+          if (entries.length < cellLimit) {
+            html += '<p class="partial-note">지금까지 ' + entries.length + "개까지 직접 확인했어요. 전체 목록은 아래의 " +
+              (kind === "book" ? "단행본" : "랭킹") + " 페이지에서 볼 수 있어요.</p>";
+          }
+          html += "</div>";
+        } else {
+          html += '<div class="verified"><p class="empty-note">아직 직접 확인한 작품이 없어요. 최신 목록은 아래의 ' +
+            (kind === "book" ? "단행본" : "랭킹") + " 페이지에서 바로 확인해 주세요.</p></div>";
+        }
+        html += linksHtml;
+        html += "</section>";
+        return html;
+      }
+
+      function renderControls() {
+        var serialCount = BOARD.entries.filter(function (e) { return e.kind === "serial"; }).length;
+        var bookCount = BOARD.entries.filter(function (e) { return e.kind === "book"; }).length;
+        var views = [
+          { key: "serial", label: "연재 추천", count: serialCount },
+          { key: "book", label: "단행본 추천", count: bookCount }
+        ];
+        document.getElementById("view-toggle").innerHTML = views.map(function (v) {
+          return '<button type="button" role="tab" aria-selected="' + (state.view === v.key) + '" data-view="' + v.key + '">' +
+            v.label + (v.count > 0 ? '<span class="count">확인 ' + v.count + "</span>" : "") + "</button>";
+        }).join("");
+
+        var genreOpts = [{ key: "all", label: "전체" }].concat(GENRES);
+        document.getElementById("genre-chips").innerHTML = genreOpts.map(function (g) {
+          return '<button type="button" role="tab" class="chip-genre" aria-selected="' + (state.genre === g.key) + '" data-genre="' + g.key + '">' + esc(g.label) + "</button>";
+        }).join("");
+
+        var platOpts = [{ key: "all", label: "모든 플랫폼" }].concat(PLATFORMS.map(function (p) { return { key: p.key, label: p.label }; }));
+        document.getElementById("platform-chips").innerHTML = platOpts.map(function (f) {
+          return '<button type="button" class="chip-platform" aria-pressed="' + (state.platform === f.key) + '" data-platform="' + f.key + '">' + esc(f.label) + "</button>";
+        }).join("");
+      }
+
+      function renderMeta() {
+        var entries = BOARD.entries.filter(function (e) { return e.kind === state.view; });
+        var cross = entries.filter(function (e) { return e.alsoOn && e.alsoOn.length > 0; }).length;
+        var parts = [];
+        if (BOARD.snapshotDate && entries.length) {
+          parts.push("직접 확인한 작품 기준일: " + formatDateLabel(BOARD.snapshotDate));
+          if (BOARD.fetchedAt) parts.push("마지막 확인 " + formatTimeLabel(BOARD.fetchedAt));
+          if (cross > 0) parts.push(state.view === "book" ? "여러 플랫폼에 함께 출간된 작품 " + cross + "건" : "여러 플랫폼에 함께 오른 작품 " + cross + "건");
+        }
+        document.getElementById("intro-meta").textContent = parts.join(" · ");
+      }
+
+      function renderBoard() {
+        var entries = BOARD.entries.filter(function (e) { return e.kind === state.view; });
+        var genres = state.genre === "all" ? GENRES : GENRES.filter(function (g) { return g.key === state.genre; });
+        var platforms = state.platform === "all" ? PLATFORMS : PLATFORMS.filter(function (p) { return p.key === state.platform; });
+        var html = "";
+        genres.forEach(function (g) {
+          html += '<section class="genre-section" aria-label="' + esc(state.view === "book" ? g.label + " 단행본 추천" : g.label + " 연재 추천") + '">' +
+            "<h2>" + esc(g.label) + '<span class="sub">' + (state.view === "book" ? "플랫폼별 단행본" : "플랫폼별 지금 많이 읽는 작품") + "</span></h2>" +
+            '<div class="grid' + (platforms.length === 1 ? "" : " multi") + '">';
+          platforms.forEach(function (p) {
+            var cell = entries.filter(function (e) { return e.genre === g.key && e.platform === p.key; })
+              .sort(function (a, b) { return a.rank - b.rank; });
+            html += platformColumn(p.key, g.key, state.view, cell);
+          });
+          html += "</div></section>";
+        });
+        document.getElementById("board").innerHTML = html;
+      }
+
+      function renderFooterLinks() {
+        var links = PLATFORMS.map(function (p) {
+          return '<a href="' + esc(p.home) + '" target="_blank" rel="noreferrer">' + esc(p.label) + " 웹소설 홈</a>";
+        });
+        links.push('<a href="' + REALTIME_PAGE + '" target="_blank" rel="noreferrer">카카오페이지 실시간 랭킹</a>');
+        links.push('<a href="' + esc(BOOK_PAGES.kakao.all[0].url) + '" target="_blank" rel="noreferrer">카카오페이지 단행본</a>');
+        links.push('<a href="' + esc(BOOK_PAGES.naver.all[0].url) + '" target="_blank" rel="noreferrer">네이버 시리즈 단행본</a>');
+        document.getElementById("footer-links").innerHTML = links.join("");
+      }
+
+      function render() {
+        renderControls();
+        renderMeta();
+        renderBoard();
+      }
+
+      document.getElementById("view-toggle").addEventListener("click", function (ev) {
+        var b = ev.target.closest("button[data-view]");
+        if (!b) return;
+        state.view = b.getAttribute("data-view");
+        render();
+      });
+      document.getElementById("genre-chips").addEventListener("click", function (ev) {
+        var b = ev.target.closest("button[data-genre]");
+        if (!b) return;
+        state.genre = b.getAttribute("data-genre");
+        render();
+      });
+      document.getElementById("platform-chips").addEventListener("click", function (ev) {
+        var b = ev.target.closest("button[data-platform]");
+        if (!b) return;
+        state.platform = b.getAttribute("data-platform");
+        render();
+      });
+
+      renderFooterLinks();
+      render();
+    </script>
+  </body>
+</html>
